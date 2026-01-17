@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.titulo {
+  margin: 0;
+  padding: 10px;
+  background: #222;
+  color: white;
+}
+
+#map {
+  height: calc(100vh - 50px);
+}
+
+/* MODAL BIENVENIDA */
+#modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  max-width: 420px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.modal-content button {
+  margin-top: 15px;
+  padding: 10px 20px;
+  background: #0066ff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* MODAL REPORTE */
+#reporteModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.reporte-box {
+  background: white;
+  padding: 20px;
+  max-width: 400px;
+  width: 90%;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.reporte-box textarea {
+  width: 100%;
+  height: 100px;
+  resize: none;
+  margin-top: 10px;
+}
+
+.btn-enviar {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  background: #d9534f;
+  color: white;
+  border: none;
+}
+
+.btn-cancelar {
+  margin-top: 5px;
+  width: 100%;
+  padding: 10px;
+  background: #777;
+  color: white;
+  border: none;
+}
