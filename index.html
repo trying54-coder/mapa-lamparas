@@ -22,7 +22,9 @@
     <h2>Bienvenido</h2>
     <p>
       Este sistema permite reportar fallas en el alumbrado público.<br><br>
-      Selecciona una lámpara y describe el problema detectado.
+      1. Da clic sobre una lámpara<br>
+      2. Describe el problema<br>
+      3. El reporte será atendido por el área correspondiente
     </p>
     <button onclick="cerrarModal()">Entendido</button>
   </div>
@@ -32,8 +34,13 @@
 <div id="reporteModal">
   <div class="reporte-box">
     <h3>¿Qué problema presenta la lámpara?</h3>
-    <textarea id="comentario"
-      placeholder="Ejemplo: la lámpara no enciende durante la noche."></textarea>
+
+    <input id="nombre" type="text" placeholder="Nombre">
+    <input id="telefono" type="tel" placeholder="Teléfono de contacto">
+
+    <textarea id="comentario" placeholder="Describa el problema
+Ejemplo: la lámpara no enciende durante la noche."></textarea>
+
     <button class="btn-enviar" onclick="enviarReporte()">Enviar reporte</button>
     <button class="btn-cancelar" onclick="cancelarReporte()">Cancelar</button>
   </div>
