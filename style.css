@@ -42,6 +42,10 @@ body {
   cursor: pointer;
 }
 
+.modal-content button:hover {
+  background: #004ccc;
+}
+
 /* MODAL REPORTE */
 #reporteModal {
   position: fixed;
@@ -62,6 +66,13 @@ body {
   text-align: center;
 }
 
+.reporte-box input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  box-sizing: border-box;
+}
+
 .reporte-box textarea {
   width: 100%;
   height: 100px;
@@ -76,6 +87,11 @@ body {
   background: #d9534f;
   color: white;
   border: none;
+  cursor: pointer;
+}
+
+.btn-enviar:hover {
+  background: #c9302c;
 }
 
 .btn-cancelar {
@@ -85,4 +101,23 @@ body {
   background: #777;
   color: white;
   border: none;
+  cursor: pointer;
+}
+
+.btn-cancelar:hover {
+  background: #666;
+}
+
+/* Botón ubicación */
+.btn-ubicacion {
+  background: white;
+  border: 2px solid #333;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-ubicacion:hover {
+  background: #f2f2f2;
 }
