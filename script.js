@@ -11,59 +11,61 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // ================================
+// 🔍 BARRA DE BÚSQUEDA (URUAPAN)
+// ================================
+L.Control.geocoder({
+  defaultMarkGeocode: false,
+  geocoder: L.Control.Geocoder.nominatim({
+    geocodingQueryParams: {
+      countrycodes: "mx",
+      viewbox: "-102.15,19.38,-101.95,19.50",
+      bounded: 1
+    }
+  })
+})
+.on("markgeocode", function(e) {
+  map.setView(e.geocode.center, 18);
+})
+.addTo(map);
+
+// ================================
 // BOTÓN: MI UBICACIÓN
 // ================================
 let markerMiUbicacion = null;
 
 const UbicacionControl = L.Control.extend({
   options: { position: "topleft" },
-
   onAdd: function () {
     const btn = L.DomUtil.create("button", "btn-ubicacion");
     btn.innerHTML = "📍 Mi ubicación";
     L.DomEvent.disableClickPropagation(btn);
 
     btn.onclick = () => {
-      if (!navigator.geolocation) {
-        alert("Tu navegador no soporta ubicación.");
-        return;
-      }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
 
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
+        if (markerMiUbicacion) map.removeLayer(markerMiUbicacion);
 
-          // borrar punto anterior
-          if (markerMiUbicacion) map.removeLayer(markerMiUbicacion);
+        markerMiUbicacion = L.circleMarker([lat, lng], {
+          radius: 8,
+          color: "#b30000",
+          fillColor: "#ff0000",
+          fillOpacity: 1
+        }).addTo(map)
+          .bindPopup("<b>Tu ubicación actual</b>")
+          .openPopup();
 
-          // ✅ marcador tachuela (bolita roja)
-          markerMiUbicacion = L.circleMarker([lat, lng], {
-            radius: 8,
-            color: "#b30000",
-            fillColor: "#ff0000",
-            fillOpacity: 1
-          }).addTo(map)
-            .bindPopup("<b>Tu ubicación actual</b>")
-            .openPopup();
-
-          map.setView([lat, lng], 18);
-        },
-        () => {
-          alert("No se pudo obtener tu ubicación. Activa el GPS o da permisos.");
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+        map.setView([lat, lng], 18);
+      });
     };
-
     return btn;
   }
 });
-
 map.addControl(new UbicacionControl());
 
 // ================================
-// ICONOS LÁMPARAS
+// ICONOS
 // ================================
 const iconNormal = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -85,7 +87,6 @@ const iconReportado = new L.Icon({
 function cerrarModal() {
   document.getElementById("modal").style.display = "none";
 }
-
 function cancelarReporte() {
   document.getElementById("reporteModal").style.display = "none";
   lamparaActual = null;
@@ -96,90 +97,98 @@ function cancelarReporte() {
 // ================================
 const clusters = L.markerClusterGroup({
   chunkedLoading: true,
-  chunkInterval: 200,
-  chunkDelay: 50,
-  disableClusteringAtZoom: 18
+  disableClusteringAtZoom: 20
 });
 
 // ================================
-// ESTADO LOCAL
+// GOOGLE SHEETS
 // ================================
-let reportadas = JSON.parse(
-  localStorage.getItem("lamparas_reportadas")
-) || {};
-
+const URL_SHEETS = "https://script.google.com/macros/s/AKfycbwpRcEPmOGtqjtGq-Cnpv_2njDy8hkwttQqLKCdxJsENfKxzyn9qeYqTD32Fchye7ijTQ/exec";
+let estadosSheets = {};
 let lamparaActual = null;
 
-function marcarReportada(id, dataReporte) {
-  reportadas[id] = dataReporte; // guarda datos
-  localStorage.setItem("lamparas_reportadas", JSON.stringify(reportadas));
+// ================================
+// CARGAR ESTADOS DESDE SHEETS
+// ================================
+fetch(URL_SHEETS)
+  .then(r => r.json())
+  .then(data => {
+    data.forEach(r => {
+      estadosSheets[r.id] = {
+        estado: r.estado,
+        fecha: r.fecha,
+        comentario: r.comentario
+      };
+    });
+    cargarLamparas();
+  })
+  .catch(() => cargarLamparas());
+
+// ================================
+// CARGAR LÁMPARAS
+// ================================
+function cargarLamparas() {
+  omnivore.kml("lamparas_ciudad.kml")
+    .on("ready", function () {
+
+      const capa = L.geoJSON(this.toGeoJSON(), {
+        pointToLayer: function (feature, latlng) {
+
+          // ID ÚNICO Y ESTABLE
+          const id = `${latlng.lat.toFixed(8)},${latlng.lng.toFixed(8)}`;
+
+          // Nombre solo visual
+          const nombre =
+            feature.properties?.name ||
+            feature.properties?.ID ||
+            "Lámpara sin nombre";
+
+          const info = estadosSheets[id];
+          const pendiente = info?.estado === "pendiente";
+
+          const marker = L.marker(latlng, {
+            icon: pendiente ? iconReportado : iconNormal
+          });
+
+          if (pendiente) {
+            marker.bindPopup(`
+              <b>${nombre}</b><br><br>
+              <b>Estado:</b> Pendiente<br>
+              <b>Fecha del reporte:</b><br>
+              ${new Date(info.fecha).toLocaleString()}<br><br>
+              <b>Comentario:</b><br>
+              ${info.comentario || "Sin comentario"}
+            `);
+          } else {
+            marker.bindPopup(`
+              <b>${nombre}</b><br><br>
+              <button onclick="abrirReporte('${id}', ${latlng.lat}, ${latlng.lng})"
+                style="padding:8px;background:#d9534f;color:white;border:none;">
+                Reportar lámpara
+              </button>
+            `);
+          }
+
+          return marker;
+        }
+      });
+
+      clusters.clearLayers();
+      clusters.addLayer(capa);
+      map.addLayer(clusters);
+      map.fitBounds(clusters.getBounds());
+    });
 }
 
 // ================================
-// CARGAR LÁMPARAS DESDE KML
+// REPORTE → GOOGLE SHEETS
 // ================================
-omnivore.kml("lamparas_ciudad.kml")
-  .on("ready", function () {
-
-    const geo = this.toGeoJSON();
-
-    const capa = L.geoJSON(geo, {
-      pointToLayer: function (feature, latlng) {
-
-        const id =
-          feature.properties?.ID ||
-          feature.properties?.name ||
-          `${latlng.lat.toFixed(6)},${latlng.lng.toFixed(6)}`;
-
-        const reporte = reportadas[id];
-        const yaReportada = !!reporte;
-
-        const marker = L.marker(latlng, {
-          icon: yaReportada ? iconReportado : iconNormal
-        });
-
-        if (yaReportada) {
-          const comentario = reporte?.comentario ? reporte.comentario : "Sin comentarios.";
-          const fechaISO = reporte?.fecha ? reporte.fecha : null;
-
-          const fechaBonita = fechaISO
-            ? new Date(fechaISO).toLocaleString()
-            : "Fecha no disponible";
-
-          // ✅ privacidad: NO se muestra nombre ni teléfono
-          marker.bindPopup(`
-            <b>Lámpara ya reportada</b><br><br>
-            <b>Fecha del reporte:</b> ${fechaBonita}<br><br>
-            <b>Comentario:</b><br>
-            ${comentario}
-          `);
-
-        } else {
-          marker.bindPopup(`
-            <button onclick="abrirReporte('${id}')"
-              style="padding:8px;background:#d9534f;color:white;border:none;">
-              Reportar lámpara
-            </button>
-          `);
-        }
-
-        return marker;
-      }
-    });
-
-    clusters.addLayer(capa);
-    map.addLayer(clusters);
-    map.fitBounds(clusters.getBounds());
-  });
-
-// ================================
-// REPORTE
-// ================================
-function abrirReporte(id) {
-  lamparaActual = id;
+function abrirReporte(id, lat, lng) {
+  lamparaActual = { id, lat, lng };
 
   document.getElementById("nombre").value = "";
   document.getElementById("telefono").value = "";
+  document.getElementById("referencia").value = "";
   document.getElementById("comentario").value = "";
 
   document.getElementById("reporteModal").style.display = "flex";
@@ -188,30 +197,25 @@ function abrirReporte(id) {
 function enviarReporte() {
   const nombre = document.getElementById("nombre").value.trim();
   const telefono = document.getElementById("telefono").value.trim();
+  const referencia = document.getElementById("referencia").value.trim();
   const comentario = document.getElementById("comentario").value.trim();
 
-  if (!nombre) {
-    alert("Ingresa tu nombre.");
+  if (!nombre || !telefono || !comentario) {
+    alert("Completa los campos requeridos.");
     return;
   }
 
-  if (!telefono) {
-    alert("Ingresa un teléfono de contacto.");
-    return;
-  }
-
-  if (!comentario) {
-    alert("Describe el problema.");
-    return;
-  }
-
-  if (!confirm("¿Confirmas el envío del reporte?")) return;
-
-  marcarReportada(lamparaActual, {
-    nombre,
-    telefono,
-    comentario,
-    fecha: new Date().toISOString()
+  fetch(URL_SHEETS, {
+    method: "POST",
+    body: JSON.stringify({
+      id: lamparaActual.id,
+      latitud: lamparaActual.lat,
+      longitud: lamparaActual.lng,
+      nombre,
+      telefono,
+      referencia,
+      comentario
+    })
   });
 
   document.getElementById("reporteModal").style.display = "none";
