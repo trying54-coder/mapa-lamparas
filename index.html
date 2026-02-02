@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <title>Reporte de Alumbrado Público</title>
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-  <!-- MarkerCluster -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -24,7 +22,7 @@
       Este sistema permite reportar fallas en el alumbrado público.<br><br>
       1. Da clic sobre una lámpara<br>
       2. Describe el problema<br>
-      3. El reporte será atendido por el área correspondiente
+      3. El reporte será atendido
     </p>
     <button onclick="cerrarModal()">Entendido</button>
   </div>
@@ -36,10 +34,10 @@
     <h3>¿Qué problema presenta la lámpara?</h3>
 
     <input id="nombre" type="text" placeholder="Nombre">
-    <input id="telefono" type="tel" placeholder="Teléfono de contacto">
+    <input id="telefono" type="tel" placeholder="Teléfono">
+    <input id="referencia" type="text" placeholder="Referencia (opcional)">
 
-    <textarea id="comentario" placeholder="Describa el problema
-Ejemplo: la lámpara no enciende durante la noche."></textarea>
+    <textarea id="comentario" placeholder="Describa el problema"></textarea>
 
     <button class="btn-enviar" onclick="enviarReporte()">Enviar reporte</button>
     <button class="btn-cancelar" onclick="cancelarReporte()">Cancelar</button>
@@ -49,10 +47,10 @@ Ejemplo: la lámpara no enciende durante la noche."></textarea>
 <h2 class="titulo">Mapa de Reporte de Lámparas</h2>
 <div id="map"></div>
 
-<!-- JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 <script src="script.js"></script>
 </body>
