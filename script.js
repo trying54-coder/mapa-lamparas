@@ -11,7 +11,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // ================================
-// 🔍 BARRA DE BÚSQUEDA (URUAPAN)
+// BUSCADOR
 // ================================
 L.Control.geocoder({
   defaultMarkGeocode: false,
@@ -23,13 +23,11 @@ L.Control.geocoder({
     }
   })
 })
-.on("markgeocode", function(e) {
-  map.setView(e.geocode.center, 18);
-})
+.on("markgeocode", e => map.setView(e.geocode.center, 18))
 .addTo(map);
 
 // ================================
-// BOTÓN: MI UBICACIÓN
+// MI UBICACIÓN
 // ================================
 let markerMiUbicacion = null;
 
@@ -65,21 +63,25 @@ const UbicacionControl = L.Control.extend({
 map.addControl(new UbicacionControl());
 
 // ================================
-// ICONOS
+// FILTRO REPORTADAS
 // ================================
-const iconNormal = new L.Icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
+let mostrarSoloReportadas = false;
 
-const iconReportado = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
+const FiltroControl = L.Control.extend({
+  options: { position: "topright" },
+  onAdd: function () {
+    const btn = L.DomUtil.create("button", "btn-ubicacion");
+    btn.innerHTML = "🚨 Solo reportadas";
+    L.DomEvent.disableClickPropagation(btn);
+
+    btn.onclick = () => {
+      mostrarSoloReportadas = !mostrarSoloReportadas;
+      cargarLamparas();
+    };
+    return btn;
+  }
 });
+map.addControl(new FiltroControl());
 
 // ================================
 // MODALES
@@ -93,75 +95,61 @@ function cancelarReporte() {
 }
 
 // ================================
-// CLUSTER
-// ================================
-const clusters = L.markerClusterGroup({
-  chunkedLoading: true,
-  disableClusteringAtZoom: 20
-});
-
-// ================================
 // GOOGLE SHEETS
 // ================================
 const URL_SHEETS = "https://script.google.com/macros/s/AKfycbwpRcEPmOGtqjtGq-Cnpv_2njDy8hkwttQqLKCdxJsENfKxzyn9qeYqTD32Fchye7ijTQ/exec";
 let estadosSheets = {};
 let lamparaActual = null;
+let capaLamparas = null;
 
 // ================================
-// CARGAR ESTADOS DESDE SHEETS
+// CARGAR ESTADOS
 // ================================
 fetch(URL_SHEETS)
   .then(r => r.json())
   .then(data => {
     data.forEach(r => {
-      estadosSheets[r.id] = {
-        estado: r.estado,
-        fecha: r.fecha,
-        comentario: r.comentario
-      };
+      estadosSheets[r.id] = r;
     });
     cargarLamparas();
   })
   .catch(() => cargarLamparas());
 
 // ================================
-// CARGAR LÁMPARAS
+// CARGAR LÁMPARAS (SIN AGRUPAR)
 // ================================
 function cargarLamparas() {
+
+  if (capaLamparas) map.removeLayer(capaLamparas);
+
   omnivore.kml("lamparas_ciudad.kml")
     .on("ready", function () {
 
-      const capa = L.geoJSON(this.toGeoJSON(), {
+      capaLamparas = L.geoJSON(this.toGeoJSON(), {
         pointToLayer: function (feature, latlng) {
 
-          // ID ÚNICO Y ESTABLE
           const id = `${latlng.lat.toFixed(8)},${latlng.lng.toFixed(8)}`;
-
-          // Nombre solo visual
-          const nombre =
-            feature.properties?.name ||
-            feature.properties?.ID ||
-            "Lámpara sin nombre";
-
           const info = estadosSheets[id];
           const pendiente = info?.estado === "pendiente";
 
-          const marker = L.marker(latlng, {
-            icon: pendiente ? iconReportado : iconNormal
+          if (mostrarSoloReportadas && !pendiente) return null;
+
+          const marker = L.circleMarker(latlng, {
+            radius: 6,
+            color: pendiente ? "#b30000" : "#0044cc",
+            fillColor: pendiente ? "#ff0000" : "#3399ff",
+            fillOpacity: 0.9
           });
 
           if (pendiente) {
             marker.bindPopup(`
-              <b>${nombre}</b><br><br>
-              <b>Estado:</b> Pendiente<br>
-              <b>Fecha del reporte:</b><br>
-              ${new Date(info.fecha).toLocaleString()}<br><br>
-              <b>Comentario:</b><br>
-              ${info.comentario || "Sin comentario"}
+              <b>Lámpara reportada</b><br><br>
+              <b>Fecha:</b><br>${new Date(info.fecha).toLocaleString()}<br><br>
+              <b>Comentario:</b><br>${info.comentario || "Sin comentario"}
             `);
           } else {
             marker.bindPopup(`
-              <b>${nombre}</b><br><br>
+              <b>Lámpara</b><br><br>
               <button onclick="abrirReporte('${id}', ${latlng.lat}, ${latlng.lng})"
                 style="padding:8px;background:#d9534f;color:white;border:none;">
                 Reportar lámpara
@@ -171,17 +159,12 @@ function cargarLamparas() {
 
           return marker;
         }
-      });
-
-      clusters.clearLayers();
-      clusters.addLayer(capa);
-      map.addLayer(clusters);
-      map.fitBounds(clusters.getBounds());
+      }).addTo(map);
     });
 }
 
 // ================================
-// REPORTE → GOOGLE SHEETS
+// REPORTE
 // ================================
 function abrirReporte(id, lat, lng) {
   lamparaActual = { id, lat, lng };
@@ -195,30 +178,19 @@ function abrirReporte(id, lat, lng) {
 }
 
 function enviarReporte() {
-  const nombre = document.getElementById("nombre").value.trim();
-  const telefono = document.getElementById("telefono").value.trim();
-  const referencia = document.getElementById("referencia").value.trim();
-  const comentario = document.getElementById("comentario").value.trim();
-
-  if (!nombre || !telefono || !comentario) {
-    alert("Completa los campos requeridos.");
-    return;
-  }
-
   fetch(URL_SHEETS, {
     method: "POST",
     body: JSON.stringify({
       id: lamparaActual.id,
       latitud: lamparaActual.lat,
       longitud: lamparaActual.lng,
-      nombre,
-      telefono,
-      referencia,
-      comentario
+      nombre: nombre.value,
+      telefono: telefono.value,
+      referencia: referencia.value,
+      comentario: comentario.value
     })
   });
 
-  document.getElementById("reporteModal").style.display = "none";
   alert("Reporte enviado correctamente");
   location.reload();
 }
