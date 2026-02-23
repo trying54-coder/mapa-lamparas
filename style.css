@@ -14,7 +14,6 @@ body {
   height: calc(100vh - 50px);
 }
 
-/* MODAL BIENVENIDA */
 #modal {
   position: fixed;
   inset: 0;
@@ -46,7 +45,6 @@ body {
   background: #004ccc;
 }
 
-/* MODAL REPORTE */
 #reporteModal {
   position: fixed;
   inset: 0;
@@ -108,7 +106,6 @@ body {
   background: #666;
 }
 
-/* Botón ubicación */
 .btn-ubicacion {
   background: white;
   border: 2px solid #333;
@@ -121,3 +118,4 @@ body {
 .btn-ubicacion:hover {
   background: #f2f2f2;
 }
+
