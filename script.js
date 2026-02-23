@@ -1,6 +1,4 @@
-// ================================
-// MAPA
-// ================================
+
 const map = L.map("map", {
   preferCanvas: true,
   maxZoom: 22
@@ -10,9 +8,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 22
 }).addTo(map);
 
-// ================================
-// BUSCADOR
-// ================================
+
 L.Control.geocoder({
   defaultMarkGeocode: false,
   geocoder: L.Control.Geocoder.nominatim({
@@ -26,9 +22,6 @@ L.Control.geocoder({
 .on("markgeocode", e => map.setView(e.geocode.center, 18))
 .addTo(map);
 
-// ================================
-// MI UBICACIÓN
-// ================================
 let markerMiUbicacion = null;
 
 const UbicacionControl = L.Control.extend({
@@ -62,9 +55,6 @@ const UbicacionControl = L.Control.extend({
 });
 map.addControl(new UbicacionControl());
 
-// ================================
-// FILTRO REPORTADAS
-// ================================
 let mostrarSoloReportadas = false;
 
 const FiltroControl = L.Control.extend({
@@ -83,9 +73,6 @@ const FiltroControl = L.Control.extend({
 });
 map.addControl(new FiltroControl());
 
-// ================================
-// MODALES
-// ================================
 function cerrarModal() {
   document.getElementById("modal").style.display = "none";
 }
@@ -94,17 +81,11 @@ function cancelarReporte() {
   lamparaActual = null;
 }
 
-// ================================
-// GOOGLE SHEETS
-// ================================
 const URL_SHEETS = "https://script.google.com/macros/s/AKfycbwpRcEPmOGtqjtGq-Cnpv_2njDy8hkwttQqLKCdxJsENfKxzyn9qeYqTD32Fchye7ijTQ/exec";
 let estadosSheets = {};
 let lamparaActual = null;
 let capaLamparas = null;
 
-// ================================
-// CARGAR ESTADOS
-// ================================
 fetch(URL_SHEETS)
   .then(r => r.json())
   .then(data => {
@@ -115,9 +96,6 @@ fetch(URL_SHEETS)
   })
   .catch(() => cargarLamparas());
 
-// ================================
-// CARGAR LÁMPARAS (SIN AGRUPAR)
-// ================================
 function cargarLamparas() {
 
   if (capaLamparas) map.removeLayer(capaLamparas);
@@ -163,9 +141,6 @@ function cargarLamparas() {
     });
 }
 
-// ================================
-// REPORTE
-// ================================
 function abrirReporte(id, lat, lng) {
   lamparaActual = { id, lat, lng };
 
@@ -194,3 +169,4 @@ function enviarReporte() {
   alert("Reporte enviado correctamente");
   location.reload();
 }
+
